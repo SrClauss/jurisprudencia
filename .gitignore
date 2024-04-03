@@ -1,0 +1,6 @@
+# Diretórios de build e distribuição
+build/
+dist/
+
+# Ambiente virtual Python
+venv/
