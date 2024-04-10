@@ -1,6 +1,7 @@
-from selenium.webdriver import Chrome
-from selenium.webdriver.chrome.options import Options
+from concurrent.futures import ThreadPoolExecutor
 from selenium.webdriver.common.by import By
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver import Chrome
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.action_chains import ActionChains
@@ -8,23 +9,20 @@ from bs4 import BeautifulSoup
 from tinydb import TinyDB
 from selenium.common.exceptions import TimeoutException, StaleElementReferenceException
 import time
-from concurrent.futures import ThreadPoolExecutor
-from common import TRIBUNAIS_ESAJ
-from common import RANGE_DATES
-import threading
 db = TinyDB("db.json")
 jurisprudencia = db.table("jurisprudencia")
+from common import CRITERIOS_120
+from mongo import errors, jurisprudencias, logs
 
 
 
-
-count = 0
 
 def next_page(driver):
     try:
 
         next_page = WebDriverWait(driver, 10).until(EC.visibility_of_element_located((By.XPATH, "//a[contains(text(), '>')]")))
         next_page.click()
+   
         return 1
     except TimeoutException:
 
@@ -36,6 +34,11 @@ def next_page(driver):
         time.sleep(1)
         driver.refresh()
         return next_page()
+    except Exception as e:
+        print(f"Erro inesperado: {e}")
+        errors.insert({"error": f"Erro inesperado: {e}", "date": time.strftime("%d/%m/%Y %H:%M:%S")})
+        return 2
+    
 
 def get_page(driver):
     WebDriverWait(driver, 10).until(EC.visibility_of_element_located((By.XPATH, "//tr[@class='fundocinza1']")))
@@ -69,16 +72,18 @@ def get_page(driver):
             
         }
         
-        global count 
-        count += 1
-        print(f"{count} registros inserido com sucesso {data_publicacao[1].strip()}")
+
     
+ 
 
 
-def colect_data(driver, data_inicio, data_final):
+
+def colect_data(driver, data_inicio, data_final, key=None):
     
+    if key:
+        input_ementa = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.ID, "iddados.buscaEmenta")))
+        input_ementa.send_keys(key)
     input_inicio = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.ID, "dtPublicacaoInicio"))).find_element(By.TAG_NAME, "input")
-    
     input_inicio.send_keys(data_inicio)
 
 
@@ -93,28 +98,24 @@ def colect_data(driver, data_inicio, data_final):
     while next_page(driver) == 1:
         for register in get_page(driver):
             yield register
+    driver.quit()
     
-    
-
-
-
-def raspe_esaj(url):
-    list = []
-    for range in RANGE_DATES:
+def raspe_concurrent(tribunal_url, tipo_range, headless = True, has_key = False, workers = 4):
+    def process_range_and_key(range, key=None):
         driver_options = Options()
-        #driver_options.add_argument("--headless")
+        if headless:
+            driver_options.add_argument("--headless")
         driver = Chrome(driver_options)
-        driver.get(url)
- 
-        for data in colect_data(driver, range[0], range[1]):
-            list.append(data) 
-        jurisprudencia.insert_multiple(list)
-                
-
-
-def raspe_concorrente():
-    with ThreadPoolExecutor() as executor:
-        executor.map(raspe_esaj, TRIBUNAIS_ESAJ)
+        driver.get(tribunal_url)
+        for data in colect_data(driver, range[0], range[1], key):
+            jurisprudencias.insert_one(data)
+        logs.insert_one({"range": range, "key": key})
+        print(f"Range {range} and key {key} processed, the jurisprudencia collection has now {jurisprudencias.count_documents({})} documents.")
         
-if __name__ == "__main__":
-    raspe_esaj("https://esaj.tjsp.jus.br/cjsg/resultadoCompleta.do")
+    with ThreadPoolExecutor(max_workers=workers) as executor:
+        for range in tipo_range:
+            if has_key:
+                for key in CRITERIOS_120:
+                    executor.submit(process_range_and_key, range, key)
+            else:
+                executor.submit(process_range_and_key, range)

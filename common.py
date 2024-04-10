@@ -1,6 +1,64 @@
-import json
+from datetime import timedelta
+import datetime
+
+
+CRITERIOS_120 = ['"Seguro residencial" OU "Seguro prestamista" OU "Seguro habitacional" OU "Correção monetária" OU "Juros abusivos"', 
+             '"Honorários de sucumbencia" OU "Taxa selic" OU "Seguro de vida" OU "Doença preexistente" OU "Seguro automóvel"', 
+             '"Cobertura securitária" OU "Sinistro" OU "Indenização securitária" OU "Cláusula de exclusão" OU "Prêmio de seguro"', 
+             '"Reajuste de prêmio" OU "Seguro residencial" OU "Seguro de responsabilidade civil" OU "Boa-fé contratual"', 
+             '"Venda casada" OU "Devolução de prêmio" OU "Mora do devedor" OU "Equiparação salarial" OU "Horas extras"', 
+             '"Assédio moral" OU "Acidente de trabalho" OU "Vínculo empregatício" OU "Rescisão contratual" OU "Fundo de Garantia"', 
+             '"Adicional de insalubridade" OU "Estabilidade provisória" OU "Férias" OU "Décimo terceiro salário"',
+             '"Direito sindical" OU "Bancário" OU "Hora adicional" OU "Gerente de agência" OU "Gernte Bancário"', 
+             '"Incompetência absoluta" OU "Incompetência relativa" OU "Juros de mora" OU "Locacao" OU "Despejo" OU "Inquilino"',
+             '"Valuation" OU "Assédio moral" OU "Balanço específico" OU "Prática abusiva" OU "Vício do produto"', 
+             '"Direito de arrependimento" OU "Publicidade enganosa" OU "Proteção contratual" OU "Oferta e demanda"', 
+             '"Cobrança indevida" OU "Produto defeituoso" OU "Cláusulas abusivas" OU "Direitos básicos do consumidor"', 
+             '"Prazo de garantia" OU "Ação de reparação de danos" OU "Serviço não fornecido" OU "Boa fé" OU "Má fé"', 
+             '"Dano material" OU "Contratos" OU "Posse" OU "Usucapião" OU "Direitos reais" OU "Obrigação de fazer"', 
+             '"Atos ilícitos" OU "Capacidade civil" OU "Interdito proibitório" OU "Inventário e partilha"', 
+             '"Direito Previdenciário" OU "Aposentadoria" OU "Benefício por incapacidade" OU "Pensão por morte"', 
+             '"Auxílio-doença" OU "Auxílio-acidente" OU "Salário-maternidade" OU "Desaposentação" OU "Carência"', 
+             '"Regime geral de previdência" OU "Benefício assistencial" OU "LOAS" OU "Fator previdenciário"', 
+             '"Direito Administrativo" OU "Licitação" OU "Concurso público" OU "Improbidade administrativa" OU "Serviço público"',
+             '"Processo administrativo" OU "Servidor público" OU "Regime jurídico único" OU "Controle da administração"', 
+             '"Concessão de serviço público" OU "Direito urbanístico" OU "Patrimônio público"',
+             '"Autarquia" OU "Direito Constitucional" OU "Direitos fundamentais" OU "Controle de constitucionalidade"',
+             '"Ação direta de inconstitucionalidade" OU "Direito à vida" OU "Liberdade de expressão" OU "Direitos sociais"', 
+             '"Separação de poderes" OU "Direitos políticos" OU "Estado Democrático de Direito" OU "Poder constituinte"', 
+             '"Ação civil pública" OU "Direitos humanos" OU "Direito de Família" OU "Divórcio" OU "Guarda de menores"', 
+             '"União estável" OU "Tutela" OU "Adoção" OU "Alimentos" OU "Direito de visitas" OU "Regime de bens" OU "Paternidade"', 
+             '"Interdição" OU "Testamento" OU "Herança" OU "Partilha de bens" OU "Direito penal" OU "Habeas corpus"', 
+             '"Crime ambiental" OU "Lavagem de dinheiro" OU "Furto" OU "Roubo" OU "Furto simples" OU "Furto qualificado"',
+             '"Homicídio" OU "Tráfico de drogas" OU "Lesão corporal" OU "Crimes cibernéticos" OU "Corrupção" OU "Peculato"',
+             '"Imputabilidade penal" OU "União estável" OU "Regime de separação parcial" OU "Regime de separação total"', 
+             '"Curatela" OU "Correspondente bancario" OU "Usucapião rural" OU "Reforma agrária"',
+             '"Conflito de terras" OU "Terra devoluta" OU "Imóvel rural" OU "Cadastro rural" OU "Contrato agrário"',
+             '"Parceria agrícola" OU "Direito de preferência" OU "Crédito rural" OU "Produtor rural" OU "Seguro agrícola"',
+             '"Cyber Direito" OU "Privacidade na internet" OU "Proteção de dados pessoais" OU "Comércio eletrônico"',
+             '"Direito autoral digital" OU "Crimes cibernéticos" OU "Assinatura digital" OU "Certificação digital"',
+             '"Redes sociais e direito" OU "Inteligência artificial e direito" OU "E-commerce e responsabilidade"',
+             '"Cibersegurança" OU "Blockchain e direito" OU "Provas Digitais" OU "Autenticidade de documentos digitais"',
+             '"Forense computacional" OU "Análise de dados digitais" OU "Rastreamento de IP" OU "Recuperação de dados"',
+             '"Assinaturas eletrônicas" OU "Interceptação de comunicações digitais" OU "Malware e análise forense"', 
+             '"Privacidade e vigilância digital" OU "Big data como prova legal" OU "Redes sociais como evidência"', 
+             '"Geolocalização" OU "Inversão do ônus da prova" OU "Prova testemunhal" OU "Prova documental" OU "Prova pericial"',
+             '"Presunção de veracidade" OU "Cadeia de custódia" OU "Ônus da prova" OU "Prova ilícita" OU "Interrogatório"', 
+             '"Confissão" OU "Acareação" OU "Prova emprestada" OU "Prova técnica" OU "Laudo pericial" OU "Valor probatório"',
+             '"Preservação de provas" OU "Prova indiciária" OU "Incidente de falsidade" OU "Prova circunstancial" OU "Vistoria"',
+             '"Preclusão probatória" OU "Direito Penal Econômico" OU "Crime contra a ordem econômica" OU "Lavagem de dinheiro"',
+             '"Concorrência desleal" OU "Fraude fiscal" OU "Insider trading" OU "Crime contra o sistema financeiro"', 
+             '"Pirâmide financeira" OU "Gestão fraudulenta" OU "Evasão de divisas" OU "Fraude em licitações"', 
+             '"Corrupção empresarial" OU "Falência fraudulenta" OU "Direito Militar" OU "Crime militar" OU "Justiça militar"',
+             '"Hierarquia e disciplina" OU "Deserção" OU "Insubordinação" OU "Motim" OU "Tribunal Militar" OU "Ato de serviço"', 
+             '"Processo penal militar" OU "Regulamento disciplinar" OU "Estatuto dos Militares" OU "Reforma militar"', 
+             '"Direito Eleitoral" OU "Direitos políticos" OU "Inelegibilidade" OU "Registro de candidatura"', 
+             '"Financiamento de campanha" OU "Urna eletrônica" OU "Voto obrigatório" OU "Ação de impugnação de mandato eletivo"', 
+             '"Crime eleitoral" OU "Justiça eleitoral" OU "Recurso eleitoral" OU "Lei da Ficha Limpa" OU "Quociente eleitoral"',
+             '"Interdito proibitirio" OU "Nunciaacao de obra nova" OU "Estilo" OU "Posse" OU "Shopping center" OU "Estacionamento"',
+             '"Franqueado"']
 LISTA_CHAVES = [
-    [
+    
         "Seguro residencial ",
         "Seguro prestamista",
         "Seguro habitacional ",
@@ -30,9 +88,7 @@ LISTA_CHAVES = [
         "Equiparação salarial",
         "Horas extras",
         "Justa causa",
-        "Assédio moral"
-    ],
-    [
+        "Assédio moral",
         "Acidente de trabalho",
         "Vínculo empregatício",
         "Rescisão contratual",
@@ -62,9 +118,7 @@ LISTA_CHAVES = [
         "Prática abusiva",
         "Vício do produto",
         "Defeito do produto ",
-        "Direito de arrependimento"
-    ],
-    [
+        "Direito de arrependimento",
         "Publicidade enganosa",
         "Proteção contratual",
         "Oferta e demanda",
@@ -94,9 +148,7 @@ LISTA_CHAVES = [
         "Direito das sucessões",
         "Direito Previdenciário",
         "Aposentadoria",
-        "Benefício por incapacidade"
-    ],
-    [
+        "Benefício por incapacidade",
         "Pensão por morte",
         "Contribuição previdenciária",
         "Auxílio-doença",
@@ -126,9 +178,7 @@ LISTA_CHAVES = [
         "Patrimônio público",
         "Intervenção do Estado na propriedade",
         "Autarquia",
-        "Direito Constitucional"
-    ],
-    [
+        "Direito Constitucional",
         "Direitos fundamentais",
         "Controle de constitucionalidade",
         "Mandado de segurança",
@@ -158,9 +208,7 @@ LISTA_CHAVES = [
         "Investigação de paternidade",
         "Interdição",
         "Testamento",
-        "Herança"
-    ],
-    [
+        "Herança",
         "Partilha de bens",
         "Direito penal",
         "Habeas corpus",
@@ -190,9 +238,7 @@ LISTA_CHAVES = [
         "Reforma agrária",
         "Desapropriação para fins de reforma agrária",
         "Conflito de terras",
-        "Terra devoluta"
-    ],
-    [
+        "Terra devoluta",
         "Imóvel rural",
         "Cadastro rural",
         "Contrato agrário",
@@ -222,9 +268,7 @@ LISTA_CHAVES = [
         "Provas Digitais",
         "Autenticidade de documentos digitais",
         "Cadeia de custódia digital",
-        "Forense computacional"
-    ],
-    [
+        "Forense computacional",
         "Análise de dados digitais",
         "Rastreamento de IP",
         "Recuperação de dados",
@@ -254,9 +298,7 @@ LISTA_CHAVES = [
         "Prova emprestada",
         "Prova técnica",
         "Laudo pericial",
-        "Valor probatório"
-    ],
-    [
+        "Valor probatório",
         "Provas ilícitas por derivação",
         "Preservação de provas",
         "Prova indiciária",
@@ -286,9 +328,7 @@ LISTA_CHAVES = [
         "Justiça militar",
         "Código Penal Militar",
         "Hierarquia e disciplina",
-        "Deserção"
-    ],
-    [
+        "Deserção",
         "Insubordinação",
         "Motim",
         "Tribunal Militar",
@@ -318,37 +358,24 @@ LISTA_CHAVES = [
         "Interdito proibitirio",
         "Nunciaacao de obra nova",
         "Estilo",
-        "Posse"
-    ],
-    [
+        "Posse",
         "Shopping center",
         "Estacionamento",
         "Franquia",
         "Franqueado"
-    ]
+    
 ]
-RANGE_DATES = json.loads(open("range_dates.json").read())
+
 
 TRIBUNAIS_ESAJ = [
-    #"https://esaj.tjac.jus.br/cjsg/consultaCompleta.do",
-    #"https://www2.tjal.jus.br/cjsg/consultaCompleta.do",
-    #"https://consultasaj.tjam.jus.br/cjsg/consultaCompleta.do",
-    #"https://esaj.tjce.jus.br/cjsg/consultaCompleta.do",
-    "https://esaj.tjsp.jus.br/cjsg/consultaCompleta.do",
-   #"https://esaj.tjms.jus.br/cjsg/consultaCompleta.do"
+    "https://esaj.tjac.jus.br/cjsg/consultaCompleta.do",
+    "https://www2.tjal.jus.br/cjsg/consultaCompleta.do",
+    "https://consultasaj.tjam.jus.br/cjsg/consultaCompleta.do",
+    "https://esaj.tjce.jus.br/cjsg/consultaCompleta.do",
+    "https://esaj.tjms.jus.br/cjsg/consultaCompleta.do"
 ]
 
 
-
-
-def tjpa(data_inicio, data_fim):
-
-    data_inicio = data_inicio.split("/")
-    data_inicio = f"{data_inicio[2]}-{data_inicio[1]}-{data_inicio[0]}"
-    data_fim = data_fim.split("/")
-    data_fim = f"{data_fim[2]}-{data_fim[1]}-{data_fim[0]}"
-    return f"https://jurisprudencia.tjpa.jus.br/?size=n_20_n&filters%5B0%5D%5Bfield%5D=datadocumento&filters%5B0%5D%5Bvalues%5D%5B0%5D%5Bfrom%5D={data_inicio}T03%3A00%3A00.000Z&filters%5B0%5D%5Bvalues%5D%5B0%5D%5Bto%5D={data_fim}T03%3A00%3A00.000Z&filters%5B0%5D%5Btype%5D=any"
-    
 
 TRIBUNAIS_SEM_RASPAGEM = {
     "https://tucujuris.tjap.jus.br/tucujuris/pages/consultar-jurisprudencia/consultar-jurisprudencia.html",
@@ -381,3 +408,17 @@ TRIBUNAIS_SISTEMA_PROPRIO = [
 TRIBUNAIS_SERVIDORES_LENTOS = [
 "https://www.tjpi.jus.br/e-tjpi/home/jurisprudencia/buscar/ss"
 ]
+
+
+
+def create_data_range(date_start, date_end, interval):
+    date_start = datetime.datetime.strptime(date_start, "%d/%m/%Y")
+    date_end = datetime.datetime.strptime(date_end, "%d/%m/%Y")
+    date_range = []
+    while date_start < date_end:
+        date_range.append([date_start.strftime("%d/%m/%Y"), (date_start + timedelta(days=interval)).strftime("%d/%m/%Y")])
+        date_start += timedelta(days=interval)
+    return date_range
+
+
+print(create_data_range("01/01/2023", "01/04/2023", 10))

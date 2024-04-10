@@ -1,9 +1,11 @@
-from esaj import raspe_esaj, raspe_concorrente
-from common import TRIBUNAIS_ESAJ
-from tinydb import TinyDB
-from tkinter import Tk, Label
+from tribunais_esaj.esaj import raspe_concurrent
+from common import TRIBUNAIS_ESAJ, RANGE_DATES_10
+from concurrent.futures import ThreadPoolExecutor
+from mongo import remove_duplicates
+
+
 
 
 if __name__ == "__main__":
-    raspe_concorrente()
+    raspe_concurrent(TRIBUNAIS_ESAJ[0], RANGE_DATES_10, False, False, 1)
     
