@@ -366,14 +366,18 @@ LISTA_CHAVES = [
     
 ]
 
+tribunais_esaj = {
+    "AC": "https://esaj.tjac.jus.br/cjsg/consultaCompleta.do",
+    "AL": "https://www2.tjal.jus.br/cjsg/consultaCompleta.do",
+    "AM": "https://consultasaj.tjam.jus.br/cjsg/consultaCompleta.do",
+    "CE": "https://esaj.tjce.jus.br/cjsg/consultaCompleta.do",
+    "MS": "https://esaj.tjms.jus.br/cjsg/consultaCompleta.do",
+    "SP": "https://esaj.tjsp.jus.br/cjsg/consultaCompleta.do",
+    
+    
+    
+}
 
-TRIBUNAIS_ESAJ = [
-    "https://esaj.tjac.jus.br/cjsg/consultaCompleta.do",
-    "https://www2.tjal.jus.br/cjsg/consultaCompleta.do",
-    "https://consultasaj.tjam.jus.br/cjsg/consultaCompleta.do",
-    "https://esaj.tjce.jus.br/cjsg/consultaCompleta.do",
-    "https://esaj.tjms.jus.br/cjsg/consultaCompleta.do"
-]
 
 
 
@@ -384,24 +388,30 @@ TRIBUNAIS_SEM_RASPAGEM = {
 }
 
 
-TRIBUNAIS_SISTEMA_PROPRIO = [
-    "https://jurisprudencia.tjrr.jus.br/juris/",
-    "https://jurisprudencia.tjto.jus.br/",
-    "https://www.tjse.jus.br/portal/consultas/jurisprudencia/judicial",
-    "https://jurisprudencia.tjba.jus.br/",
-    "https://sistemas.tjes.jus.br/consultas_publicas/busca/pje2g",
-    "https://www3.tjrj.jus.br/ejuris/ConsultarJurisprudencia.aspx",
-    "https://www5.tjmg.jus.br/jurisprudencia/formEspelhoAcordao.do",
-    "https://www.jusbrasil.com.br/jurisprudencia/tj-sc/",
-    "https://portal.tjpr.jus.br/jurisprudencia/",
-    "https://www.tjrs.jus.br/novo/buscas-solr/?aba=jurisprudencia&q=&conteudo_busca=ementa_completa",
-    "https://pesquisajuris.tjdft.jus.br/IndexadorAcordaos-web/sistj?visaoId=tjdf.sistj.acordaoeletronico.buscaindexada.apresentacao.VisaoBuscaAcordao",
-    "https://projudi.tjgo.jus.br/ConsultaJurisprudencia",
-    "https://jurisprudencia.tjmt.jus.br/catalogo",
+tribunais_sistema_proprio = {
+    "RR": "https://jurisprudencia.tjrr.jus.br/juris/",
+    "TO": "https://jurisprudencia.tjto.jus.br/",
+    "SE": "https://www.tjse.jus.br/portal/consultas/jurisprudencia/judicial",
+    "BA": "https://jurisprudencia.tjba.jus.br/",
+    "ES": "https://sistemas.tjes.jus.br/consultas_publicas/busca/pje2g",
+    
+    "RJ": "https://www3.tjrj.jus.br/ejuris/ConsultarJurisprudencia.aspx",
+    "MG": "https://www5.tjmg.jus.br/jurisprudencia/formEspelhoAcordao.do",
+    "SC": "https://www.jusbrasil.com.br/jurisprudencia/tj-sc/",
+    "PR": "https://portal.tjpr.jus.br/jurisprudencia/",
+    "RS": "https://www.tjrs.jus.br/novo/buscas-solr/?aba=jurisprudencia&q=&conteudo_busca=ementa_completa",
+    "DF": "https://pesquisajuris.tjdft.jus.br/IndexadorAcordaos-web/sistj?visaoId=tjdf.sistj.acordaoeletronico.buscaindexada.apresentacao.VisaoBuscaAcordao",
+    "GO": "https://projudi.tjgo.jus.br/ConsultaJurisprudencia",
+    "MT": "https://jurisprudencia.tjmt.jus.br/catalogo",
     
     
     
-]
+    
+}
+    
+    
+    
+
 
 
 
@@ -411,7 +421,25 @@ TRIBUNAIS_SERVIDORES_LENTOS = [
 
 
 
+
+
 def create_data_range(date_start, date_end, interval):
+    """
+    Cria uma lista de intervalos de datas entre as datas de início e fim fornecidas.
+
+    Args:
+        date_start (str): A data de início no formato "%d/%m/%Y".
+        date_end (str): A data de fim no formato "%d/%m/%Y".
+        interval (int): O número de dias entre cada intervalo de datas.
+
+    Retorna:
+        list: Uma lista de intervalos de datas, onde cada intervalo é representado como uma lista com dois elementos:
+              a data de início e a data de fim no formato "%d/%m/%Y".
+
+    Exemplo:
+        >>> create_data_range("01/01/2022", "31/01/2022", 7)
+        [['01/01/2022', '08/01/2022'], ['08/01/2022', '15/01/2022'], ['15/01/2022', '22/01/2022'], ['22/01/2022', '29/01/2022']]
+    """
     date_start = datetime.datetime.strptime(date_start, "%d/%m/%Y")
     date_end = datetime.datetime.strptime(date_end, "%d/%m/%Y")
     date_range = []
@@ -419,6 +447,3 @@ def create_data_range(date_start, date_end, interval):
         date_range.append([date_start.strftime("%d/%m/%Y"), (date_start + timedelta(days=interval)).strftime("%d/%m/%Y")])
         date_start += timedelta(days=interval)
     return date_range
-
-
-print(create_data_range("01/01/2023", "01/04/2023", 10))
