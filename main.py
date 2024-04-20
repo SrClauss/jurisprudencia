@@ -4,9 +4,10 @@ from concurrent.futures import ThreadPoolExecutor
 from mongo import remove_duplicates, jurisprudencias, pages
 from datetime import datetime
 from selenium.webdriver import Chrome, ChromeOptions
+from stj import scraping_stj_concurrent, get_search_results
 
 if __name__ == "__main__":
-    
+    """
     tribunais = ["https://esaj.tjac.jus.br/cjsg/consultaCompleta.do",
                 "https://www2.tjal.jus.br/cjsg/consultaCompleta.do",
                 "https://consultasaj.tjam.jus.br/cjsg/consultaCompleta.do",
@@ -17,3 +18,6 @@ if __name__ == "__main__":
     with ThreadPoolExecutor(max_workers=4) as executor:
         for tribunal in tribunais:
             executor.submit(raspe_concurrent, tribunal, data_range, False, False, 4)
+    """
+get_search_results(["01/05/2023", "31/05/2023" ])
+    
