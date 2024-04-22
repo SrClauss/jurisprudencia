@@ -1,17 +1,18 @@
-import undetected_chromedriver as uc
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from bs4 import BeautifulSoup
-from concurrent.futures import ThreadPoolExecutor
+import threading
 from selenium.webdriver.common.keys import Keys
 from mongo import jurisprudencias
 from selenium.webdriver.support.ui import Select
 import re
 from common import create_data_range
-
-
+from selenium import webdriver
+import undetected_chromedriver as uc
+from time import sleep
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 def get_search_results(interval):
     driver = uc.Chrome()
@@ -21,15 +22,10 @@ def get_search_results(interval):
     data_inicial = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.ID, "dtde1")))
     data_inicial.send_keys(interval[0])
     data_inicial.send_keys(Keys.ENTER)
-
     data_final = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.ID, "dtde2")))
     data_final.send_keys(interval[1])
     data_final.send_keys(Keys.ENTER)
     ActionChains(driver).send_keys(Keys.ENTER).perform()
-    select = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.ID, "qtdDocsPagina")))
-    select = Select(select)
-    select.select_by_index(2)
-
     return driver
 
 
@@ -43,7 +39,7 @@ def get_page(driver):
         doc_textos = documento.find_all('div', class_='docTexto')
         soup_texto = BeautifulSoup(doc_textos[0].__str__().replace("<br/>", "\n"), 'html.parser')
         numero_processo = soup_texto.text.strip().split('\n')
-        numero_processo = str.format("{} - {} - {}", numero_processo[0], numero_processo[1], numero_processo[2])
+        numero_processo =  numero_processo[2].strip()
         relator = doc_textos[1].text.strip()
         comarca = None
         orgao_julgador = doc_textos[2].text.strip()
@@ -58,7 +54,7 @@ def get_page(driver):
         ementa_str = ementa.text.strip()
         acortado_str = doc_textos[6].text.strip()
         yield {
-            "numero_processo": numero_processo,
+            "numero_peticao": numero_processo,
             "relator": relator,
             "classes_assunto": classes_assunto,
             "comarca": comarca,
@@ -70,36 +66,48 @@ def get_page(driver):
         }
         
 
-from time import sleep
-def scraping_stj(interval):
-    driver = get_search_results(interval)
-    next_page = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CLASS_NAME, "iconeProximaPagina")))
-    try:
-        next_page_intatived = driver.find_element(By.CLASS_NAME, "iconeProximaPagina.inativo")
-    except:
-        next_page_intatived = None
+
+def scraping_stj(interval, driver=None):
     
-    while next_page_intatived is None:
-        for document in get_page(driver):
-            jurisprudencias.insert_one(document)
-            print(str.format("inseriu o processo {}", document["numero_processo"]))    
-        old_page = driver.page_source
-        next_page.click()
-        WebDriverWait(driver, 10).until(EC.url_changes(old_page))
-        next_page = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CLASS_NAME, "iconeProximaPagina")))
+    if driver is None:
+        driver = get_search_results(interval)
+    
+    with driver:
         try:
-            next_page_intatived = driver.find_element(By.CLASS_NAME, "iconeProximaPagina.inativo")
+            erro_mensagem = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CLASS_NAME, "erroMensagem")))
+            return
         except:
-            next_page_intatived = None
+            select = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.ID, "qtdDocsPagina")))
+            select = Select(select)
+            select.select_by_index(2)
+            contagem = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, "div.col-auto.clsNumDocumento")))
+            contagem_inicial = contagem.text.split(" de ")[0]
+            contagem_final = int(contagem.text.split(" de ")[1])
+            for i in range (51, contagem_final, 50):
+                url = driver.current_url
+                driver.execute_script(f"navegaForm({i});")
+                for element in get_page(driver):
+                    jurisprudencias.insert_one(element)
+                    print(f"Processo {element['numero_processo']} inserido no banco de dados com sucesso")
+                while driver.find_element(By.CSS_SELECTOR, "div.col-auto.clsNumDocumento").text.split(" de ")[0] == contagem_inicial:
+                    sleep(1)
+                contagem_inicial = driver.find_element(By.CSS_SELECTOR, "div.col-auto.clsNumDocumento").text.split(" de ")[0]
+                print(f"{contagem_inicial} processos de {contagem_final} na thread do intervalo {interval}") 
         driver.quit()
-
     
-    
-    
-def scraping_stj_concurrent(intervals, max_workers=5):
-    with ThreadPoolExecutor(max_workers=5) as executor:
-        executor.map(scraping_stj, intervals)
-
-
+def get_multi_results(intervals):
+    for interval in intervals:
+        yield get_search_results(interval)
         
-
+        
+        
+def scraping_stj_multi(intervals):
+    drivers = list(get_multi_results(intervals))
+    with ThreadPoolExecutor(max_workers=intervals.__len__()) as executor:
+        futures = [executor.submit(scraping_stj, interval, driver) for interval, driver in zip(intervals, drivers)]
+        for future in as_completed(futures):
+            try:
+                future.result()
+            except Exception as e:
+                print(e)
+    

@@ -23,6 +23,7 @@ def remove_duplicates():
         }
     ]
     duplicates = list(jurisprudencias.aggregate(pipeline))
+    print(f"Found {len(duplicates)} duplicates")
     for duplicate in duplicates:
         del duplicate["duplicates"][0]
     for duplicate in duplicates:
