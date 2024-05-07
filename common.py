@@ -367,12 +367,13 @@ LISTA_CHAVES = [
 ]
 
 tribunais_esaj = {
-    "AC": "https://esaj.tjac.jus.br/cjsg/consultaCompleta.do",
-    "AL": "https://www2.tjal.jus.br/cjsg/consultaCompleta.do",
-    "AM": "https://consultasaj.tjam.jus.br/cjsg/consultaCompleta.do",
-    "CE": "https://esaj.tjce.jus.br/cjsg/consultaCompleta.do",
-    "MS": "https://esaj.tjms.jus.br/cjsg/consultaCompleta.do",
-    "SP": "https://esaj.tjsp.jus.br/cjsg/consultaCompleta.do",
+    
+    "AC": ("TJAC", "https://esaj.tjac.jus.br/cjsg/consultaCompleta.do"),
+    "AL": ("TJAL", "https://www2.tjal.jus.br/cjsg/consultaCompleta.do"),
+    "AM": ("TJAM", "https://consultasaj.tjam.jus.br/cjsg/consultaCompleta.do"),
+    "CE": ("TJCE", "https://esaj.tjce.jus.br/cjsg/consultaCompleta.do"),
+    "MS": ("TJMS", "https://esaj.tjms.jus.br/cjsg/consultaCompleta.do"),
+    "SP": ("TJSP", "https://esaj.tjsp.jus.br/cjsg/consultaCompleta.do"),
     
     
     
@@ -422,7 +423,6 @@ TRIBUNAIS_SERVIDORES_LENTOS = [
 
 
 
-
 def create_data_range(date_start, date_end, interval):
     """
     Cria uma lista de intervalos de datas entre as datas de início e fim fornecidas.
@@ -444,6 +444,9 @@ def create_data_range(date_start, date_end, interval):
     date_end = datetime.datetime.strptime(date_end, "%d/%m/%Y")
     date_range = []
     while date_start < date_end:
-        date_range.append([date_start.strftime("%d/%m/%Y"), (date_start + timedelta(days=interval)).strftime("%d/%m/%Y")])
+        next_date = date_start + timedelta(days=interval)
+        if next_date > date_end:
+            next_date = date_end
+        date_range.append([date_start.strftime("%d/%m/%Y"), next_date.strftime("%d/%m/%Y")])
         date_start += timedelta(days=interval)
     return date_range
