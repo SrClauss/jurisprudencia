@@ -9,7 +9,7 @@ from bs4 import BeautifulSoup
 from selenium.common.exceptions import TimeoutException, StaleElementReferenceException
 import time
 from common import CRITERIOS_120
-from mongo import jurisprudencias, logs, pages
+from mongo import jurisprudencias, logs, completados
 from datetime import datetime
 
 
@@ -102,7 +102,7 @@ def colect_data(driver, data_inicio,  data_final,tribunal, key=None, timeout=Non
         print(registro)
     driver.quit()
     """
-    
+    driver.maximize_window()
     if key:
         input_ementa = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.ID, "iddados.buscaEmenta")))
         input_ementa.send_keys(key)
@@ -115,12 +115,14 @@ def colect_data(driver, data_inicio,  data_final,tribunal, key=None, timeout=Non
     input_final.send_keys(data_final)
     button_submit = driver.find_element(By.XPATH, "//input[@type='submit']")
     button_submit.click()
+    driver.minimize_window()
     numero = driver.find_element(By.ID, "nomeAba-A").text.replace("Acórdãos(", "").replace(")", "")
     print(f"Numero de acórdãos: {numero}")
-    pages.insert_one({"key": key if key !=None else "", "data_inicio": data_inicio, "data_final": data_final, "numero": int(numero)})
+
     while next_page(driver, timeout=timeout) == 1:
         for register in get_page(driver, tribunal):
             yield register
+    completados.insert_one({"key": key if key !=None else "", "data_inicio": data_inicio, "data_final": data_final, "numero": int(numero), "tribunal": tribunal, "date": time.strftime("%d/%m/%Y %H:%M:%S")})
     driver.quit()
     
 def multithread_scraping_esaj(tribunal, tipo_range, headless=False, has_key=False, workers=4, keys=CRITERIOS_120, timeout=None):
@@ -148,6 +150,8 @@ def multithread_scraping_esaj(tribunal, tipo_range, headless=False, has_key=Fals
                 driver_options.add_argument("--headless")
             driver = Chrome(driver_options)
             driver.get(tribunal[1])
+     
+      
             for data in colect_data(driver, range[0], range[1], tribunal[0], key, timeout=timeout):
                 jurisprudencias.insert_one(data)
         except Exception as e:

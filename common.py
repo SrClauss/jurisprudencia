@@ -365,7 +365,6 @@ LISTA_CHAVES = [
         "Franqueado"
     
 ]
-
 tribunais_esaj = {
     
     "AC": ("TJAC", "https://esaj.tjac.jus.br/cjsg/consultaCompleta.do"),

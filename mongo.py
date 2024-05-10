@@ -4,7 +4,7 @@ db = client["jus"]
 
 jurisprudencias = db.get_collection("jurisprudencia")
 logs = db.get_collection("logs")
-pages = db.get_collection("pages")
+completados = db.get_collection("completados")
 
 
 def remove_duplicates():

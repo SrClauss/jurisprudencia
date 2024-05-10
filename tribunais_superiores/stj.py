@@ -13,6 +13,8 @@ from selenium import webdriver
 import undetected_chromedriver as uc
 from time import sleep
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from mongo import completados
+from datetime import datetime
 
 def get_search_results(interval):
     driver = uc.Chrome()
@@ -88,10 +90,19 @@ def scraping_stj(interval, driver=None):
                 driver.execute_script(f"navegaForm({i});")
                 for element in get_page(driver):
                     jurisprudencias.insert_one(element)
-                    print(f"Processo {element['numero_processo']} inserido no banco de dados com sucesso")
+                    print(f"Processo inserido no banco de dados com sucesso")
                 while driver.find_element(By.CSS_SELECTOR, "div.col-auto.clsNumDocumento").text.split(" de ")[0] == contagem_inicial:
                     sleep(1)
                 contagem_inicial = driver.find_element(By.CSS_SELECTOR, "div.col-auto.clsNumDocumento").text.split(" de ")[0]
+    
+                completados.insert_one({
+                    "data_inicio": interval[0],
+                    "data_final": interval[1],
+                    "numero": contagem_final,
+                    "tribunal": "STJ",
+                    "date": datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+                }
+                                       )
                 print(f"{contagem_inicial} processos de {contagem_final} na thread do intervalo {interval}") 
         driver.quit()
     
